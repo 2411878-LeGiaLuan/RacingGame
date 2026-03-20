@@ -3,204 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gia Luân: Siêu Tốc Chiến Hạm</title>
+    <title>ĐẠI CHIẾN HẠM - GIA LUÂN</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', Courier, monospace; }
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Segoe UI', sans-serif; color: white; }
         canvas { display: block; }
-        #ui { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; color: #fff; font-size: 20px; font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 2px 2px #000; }
-        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; color: white; text-align: center; }
-        .btn { background: linear-gradient(45deg, #00d2ff, #3a7bd5); color: white; padding: 20px 50px; border-radius: 50px; font-weight: bold; border: none; font-size: 24px; margin-top: 20px; box-shadow: 0 0 20px #00d2ff; cursor: pointer; }
-        .stat { color: #ffd700; }
+        #ui { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; font-size: 18px; font-weight: bold; z-index: 10; text-shadow: 2px 2px #000; }
+        #overlay, #shop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; text-align: center; }
+        #shop { display: none; background: rgba(0,10,20,0.95); }
+        .btn { background: linear-gradient(45deg, #ff4757, #ff6b81); color: white; padding: 15px 35px; border-radius: 50px; border: none; font-size: 20px; margin: 10px; box-shadow: 0 0 15px #ff4757; cursor: pointer; }
+        .shop-item { background: rgba(255,255,255,0.1); padding: 15px; margin: 10px; border-radius: 15px; width: 280px; border: 1px solid #00d2ff; }
+        .shop-item b { color: #ffd700; font-size: 18px; }
+        .buy-btn { background: #00d2ff; color: black; border: none; padding: 5px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .stat-val { color: #00ffcc; }
     </style>
 </head>
 <body>
     <div id="ui">
-        <div>TIỀN: <span class="stat" id="money">0</span>$</div>
-        <div>ĐIỂM: <span id="score">0</span></div>
+        <div>TIỀN: <span class="stat-val" id="moneyUI">0</span>$</div>
+        <div>ĐIỂM: <span class="stat-val" id="scoreUI">0</span></div>
     </div>
+
     <div id="overlay">
-        <h1 id="title" style="font-size: 40px; color: #00d2ff; margin: 10px;">SIÊU TỐC GIA LUÂN V3</h1>
-        <p style="padding: 0 20px;">Vuốt để lái xe - Súng tự động bắn!<br>Ăn TIỀN và QUÀ để nâng cấp</p>
+        <h1 style="font-size: 50px; color: #ff4757; text-shadow: 0 0 20px #ff4757;">ĐẠI CHIẾN HẠM</h1>
+        <p>Tiêu diệt địch để ghi điểm và kiếm tiền!</p>
         <button class="btn" onclick="startGame()">KHAI CHIẾN</button>
+        <button class="btn" style="background: #00d2ff; box-shadow: 0 0 15px #00d2ff;" onclick="toggleShop(true)">VŨ KHÍ SHOP</button>
     </div>
+
+    <div id="shop">
+        <h2 style="color: #00d2ff;">HỆ THỐNG VŨ KHÍ</h2>
+        <div id="shopList">
+            <div class="shop-item">
+                <b>LAZE ĐÔI</b><br><small>Bắn 2 tia song song mạnh mẽ</small><br>
+                <span>Giá: 500$</span> <button class="buy-btn" onclick="buyWeapon(1, 500)">MUA</button>
+            </div>
+            <div class="shop-item">
+                <b>SÚNG BA TIA</b><br><small>Tỏa rộng quét sạch màn hình</small><br>
+                <span>Giá: 1200$</span> <button class="buy-btn" onclick="buyWeapon(2, 1200)">MUA</button>
+            </div>
+            <div class="shop-item">
+                <b>PHÁO PLASMA</b><br><small>Đạn khổng lồ siêu sát thương</small><br>
+                <span>Giá: 2500$</span> <button class="buy-btn" onclick="buyWeapon(3, 2500)">MUA</button>
+            </div>
+        </div>
+        <button class="btn" onclick="toggleShop(false)">QUAY LẠI</button>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        const scoreEl = document.getElementById("score");
-        const moneyEl = document.getElementById("money");
-        const overlay = document.getElementById("overlay");
-
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let gameActive = false, score = 0, money = 0, speed = 8;
-        let player = { x: canvas.width / 2, y: canvas.height - 150, w: 50, h: 80, shield: 0 };
-        let enemies = [], bullets = [], items = [], particles = [];
+        let gameActive = false, score = 0, money = 100, weaponType = 0;
+        let player = { x: canvas.width/2, y: canvas.height-120, w: 60, h: 80 };
+        let enemies = [], bullets = [], items = [], boss = null;
 
-        // --- ÂM THANH (Dùng Web Audio API để không cần file ngoài) ---
+        // Âm thanh giả lập
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(freq, type, duration) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        function playSfx(f, t, d) {
+            let o = audioCtx.createOscillator(); let g = audioCtx.createGain();
+            o.type = t; o.frequency.value = f; g.gain.value = 0.1;
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + d);
         }
 
-        // Điều khiển Vuốt (Dính tay 100%)
+        function toggleShop(show) {
+            document.getElementById("shop").style.display = show ? "flex" : "none";
+            document.getElementById("moneyUI").innerText = money;
+        }
+
+        function buyWeapon(type, price) {
+            if (money >= price) {
+                money -= price;
+                weaponType = type;
+                alert("Đã nâng cấp vũ khí!");
+                toggleShop(false);
+            } else { alert("Không đủ tiền, hãy nhặt thêm tiền trên đường đua!"); }
+        }
+
         window.addEventListener("touchmove", (e) => {
-            if (!gameActive) return;
+            if(!gameActive) return;
             player.x = e.touches[0].clientX;
-            if (player.x < 30) player.x = 30;
-            if (player.x > canvas.width - 30) player.x = canvas.width - 30;
         });
 
         function startGame() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            gameActive = true; overlay.style.display = "none";
-            score = 0; money = 0; speed = 8; enemies = []; bullets = []; items = []; particles = [];
-            player.shield = 0;
-            spawnLoop();
+            gameActive = true;
+            document.getElementById("overlay").style.display = "none";
+            score = 0; enemies = []; bullets = []; boss = null;
         }
 
-        function spawnLoop() {
+        function spawnEnemy() {
             if (!gameActive) return;
-            // Tạo xe địch đa dạng
-            let type = Math.random() > 0.8 ? 'tank' : 'car';
-            enemies.push({ x: Math.random() * (canvas.width - 50) + 25, y: -100, type: type, hp: type === 'tank' ? 3 : 1 });
-            
-            // Tạo Tiền hoặc Quà
-            if (Math.random() > 0.5) {
-                items.push({ x: Math.random() * (canvas.width - 50) + 25, y: -100, kind: Math.random() > 0.8 ? 'gift' : 'coin' });
+            if (score > 0 && score % 1000 === 0 && !boss) {
+                boss = { x: canvas.width/2, y: -150, hp: 50, maxHp: 50, dir: 1 };
+            } else if (!boss) {
+                enemies.push({ x: Math.random()*(canvas.width-50)+25, y: -50, hp: 1, type: Math.random()>0.8?'tank':'car' });
             }
-            setTimeout(spawnLoop, Math.max(400, 1000 - score/10));
+            if (Math.random() > 0.7) items.push({ x: Math.random()*(canvas.width-50)+25, y: -50 });
+            setTimeout(spawnEnemy, 800);
         }
 
-        function createExplosion(x, y, color) {
-            for (let i = 0; i < 10; i++) {
-                particles.push({ x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1, color });
+        function fire() {
+            if (!gameActive) return;
+            if (weaponType === 0) bullets.push({ x: player.x, y: player.y-40, vx: 0, size: 4 });
+            if (weaponType === 1) { 
+                bullets.push({ x: player.x-15, y: player.y-40, vx: 0, size: 4 });
+                bullets.push({ x: player.x+15, y: player.y-40, vx: 0, size: 4 });
             }
+            if (weaponType === 2) {
+                bullets.push({ x: player.x, y: player.y-40, vx: 0, size: 4 });
+                bullets.push({ x: player.x, y: player.y-40, vx: -2, size: 4 });
+                bullets.push({ x: player.x, y: player.y-40, vx: 2, size: 4 });
+            }
+            if (weaponType === 3) bullets.push({ x: player.x, y: player.y-40, vx: 0, size: 15 });
+            playSfx(400, 'square', 0.05);
+            setTimeout(fire, 300);
         }
 
         function update() {
             if (!gameActive) return;
-            score++; speed += 0.001;
-            scoreEl.innerText = Math.floor(score/10);
-            moneyEl.innerText = money;
-
-            // Tự động bắn súng
-            if (score % 15 === 0) {
-                bullets.push({ x: player.x, y: player.y - 40 });
-                playSound(440, 'square', 0.05);
-            }
-
-            // Cập nhật đạn
+            
             bullets.forEach((b, i) => {
-                b.y -= 15;
-                if (b.y < 0) bullets.splice(i, 1);
+                b.y -= 12; b.x += b.vx || 0;
+                if(b.y < 0) bullets.splice(i, 1);
             });
 
-            // Cập nhật xe địch
             enemies.forEach((e, i) => {
-                e.y += (e.type === 'car' ? speed : speed * 0.7);
-                if (e.y > canvas.height) enemies.splice(i, 1);
-
-                // Va chạm đạn với địch
+                e.y += 5;
+                if(e.y > canvas.height) enemies.splice(i, 1);
                 bullets.forEach((b, bi) => {
-                    if (Math.abs(b.x - e.x) < 30 && Math.abs(b.y - e.y) < 40) {
-                        e.hp--;
-                        bullets.splice(bi, 1);
-                        if (e.hp <= 0) {
-                            createExplosion(e.x, e.y, e.type === 'car' ? 'red' : 'gray');
-                            enemies.splice(i, 1);
-                            money += 5;
-                            playSound(150, 'sawtooth', 0.1);
-                        }
+                    if(Math.abs(b.x-e.x)<25 && Math.abs(b.y-e.y)<40) {
+                        enemies.splice(i, 1); bullets.splice(bi, 1);
+                        score += 50; money += 5; // Điểm chỉ tăng khi hạ địch
                     }
                 });
+                if(Math.abs(player.x-e.x)<40 && Math.abs(player.y-e.y)<60) endGame();
+            });
 
-                // Va chạm xe với địch
-                if (Math.abs(player.x - e.x) < 40 && Math.abs(player.y - e.y) < 60) {
-                    if (player.shield > 0) {
-                        player.shield = 0;
-                        enemies.splice(i, 1);
-                        createExplosion(e.x, e.y, 'yellow');
-                    } else {
-                        endGame();
+            if (boss) {
+                boss.y += boss.y < 100 ? 2 : 0;
+                boss.x += 3 * boss.dir;
+                if (boss.x > canvas.width-50 || boss.x < 50) boss.dir *= -1;
+                bullets.forEach((b, bi) => {
+                    if (Math.abs(b.x-boss.x)<60 && Math.abs(b.y-boss.y)<60) {
+                        boss.hp--; bullets.splice(bi, 1);
+                        if(boss.hp <= 0) { boss = null; score += 1000; money += 500; }
                     }
-                }
-            });
+                });
+            }
 
-            // Cập nhật Tiền/Quà
             items.forEach((it, i) => {
-                it.y += speed;
-                if (Math.abs(player.x - it.x) < 40 && Math.abs(player.y - it.y) < 60) {
-                    if (it.kind === 'coin') money += 20;
-                    else player.shield = 300; // Khiên trong 5 giây
-                    items.splice(i, 1);
-                    playSound(880, 'sine', 0.1);
+                it.y += 5;
+                if(Math.abs(player.x-it.x)<40 && Math.abs(player.y-it.y)<60) {
+                    money += 50; items.splice(i, 1); playSfx(800, 'sine', 0.1);
                 }
             });
 
-            if (player.shield > 0) player.shield--;
-            particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; if(p.life <= 0) particles.splice(i,1); });
+            document.getElementById("scoreUI").innerText = score;
+            document.getElementById("moneyUI").innerText = money;
         }
 
         function draw() {
-            ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#00050a"; ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Vẽ vạch đường lướt nhanh
-            ctx.fillStyle = "#333";
-            for (let i = 0; i < 10; i++) ctx.fillRect(canvas.width/2-2, (i*120 + score*speed/2)%canvas.height, 4, 60);
+            // Vẽ vạch đường lướt
+            ctx.fillStyle = "#0a1a2a";
+            for(let i=0; i<10; i++) ctx.fillRect(canvas.width/2-2, (i*150 + Date.now()/10)%canvas.height, 4, 80);
 
-            // Vẽ Đạn Laze
+            // Đạn
             ctx.fillStyle = "#00ffcc";
-            bullets.forEach(b => ctx.fillRect(b.x - 2, b.y, 4, 20));
+            bullets.forEach(b => ctx.fillRect(b.x-b.size/2, b.y, b.size, 20));
 
-            // Vẽ Xe Địch (Đa dạng)
+            // Địch
             enemies.forEach(e => {
-                ctx.fillStyle = e.type === 'car' ? "#ff4757" : "#57606f";
-                ctx.fillRect(e.x - 25, e.y - 40, 50, 80);
-                if (e.type === 'tank') { // Vẽ nòng pháo cho tank
-                    ctx.fillStyle = "#2f3542"; ctx.fillRect(e.x-5, e.y+20, 10, 30);
-                }
+                ctx.fillStyle = e.type==='tank'?'#57606f':'#ff4757';
+                ctx.fillRect(e.x-25, e.y-40, 50, 80);
             });
 
-            // Vẽ Tiền & Quà
-            items.forEach(it => {
-                ctx.font = "30px Arial";
-                ctx.fillText(it.kind === 'coin' ? "💰" : "🎁", it.x - 15, it.y);
-            });
+            // Boss
+            if (boss) {
+                ctx.fillStyle = "#ff0000"; ctx.fillRect(boss.x-60, boss.y-50, 120, 100);
+                ctx.fillStyle = "white"; ctx.fillRect(boss.x-50, boss.y-70, 100, 5);
+                ctx.fillStyle = "#00ff00"; ctx.fillRect(boss.x-50, boss.y-70, (boss.hp/boss.maxHp)*100, 5);
+                ctx.font = "bold 15px Arial"; ctx.fillText("BOSS DỮ DẰN", boss.x-45, boss.y-80);
+            }
 
-            // Vẽ Xe Người Chơi (GIA LUÂN)
-            ctx.shadowBlur = player.shield > 0 ? 30 : 15;
-            ctx.shadowColor = player.shield > 0 ? "#ffd700" : "#00d2ff";
+            // Vật phẩm tiền
+            ctx.font = "25px Arial";
+            items.forEach(it => ctx.fillText("💰", it.x-12, it.y));
+
+            // Chiến hạm người chơi
+            ctx.shadowBlur = 20; ctx.shadowColor = "#00d2ff";
             ctx.fillStyle = "#00d2ff";
-            ctx.fillRect(player.x - 25, player.y - 40, 50, 80);
-            ctx.fillStyle = "white"; ctx.font = "bold 12px Arial"; ctx.fillText("G.LUÂN", player.x-20, player.y+10);
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y-50);
+            ctx.lineTo(player.x-30, player.y+30);
+            ctx.lineTo(player.x+30, player.y+30);
+            ctx.closePath(); ctx.fill();
             ctx.shadowBlur = 0;
 
-            // Vẽ hiệu ứng nổ
-            particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); });
-            ctx.globalAlpha = 1;
-
-            update();
-            requestAnimationFrame(draw);
+            update(); requestAnimationFrame(draw);
         }
 
         function endGame() {
             gameActive = false;
-            overlay.style.display = "flex";
-            document.getElementById("title").innerText = "CHIẾN HẠM BỊ PHÁ HỦY!";
-            playSound(100, 'sawtooth', 0.5);
-            if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+            document.getElementById("overlay").style.display = "flex";
+            document.querySelector("h1").innerText = "CHIẾN HẠM THẤT THỦ";
         }
 
-        draw();
+        spawnEnemy(); fire(); draw();
     </script>
 </body>
 </html>
-
