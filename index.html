@@ -1,1 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gia Luân: Unlimited Neon Racer</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Consolas', sans-serif; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 15px; width: 100%; text-align: center; color: #fff; pointer-events: none; }
+        #dist { font-size: 28px; font-weight: bold; text-shadow: 0 0 10px #fff; }
+        #energyBar { width: 150px; height: 10px; background: #333; margin: 5px auto; border-radius: 5px; overflow: hidden; display: none; }
+        #energyFill { width: 100%; height: 100%; background: #ffd700; box-shadow: 0 0 10px #ffd700; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); 
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; color: white; text-align: center;}
+        .btn { background: #ffd700; color: #000; padding: 15px 40px; border-radius: 50px; font-weight: bold; border: none; font-size: 20px; margin-top: 25px; box-shadow: 0 0 20px #ffd700; }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <span id="dist">0</span>m<br>
+        <div id="energyBar"><div id="energyFill"></div></div>
+    </div>
+    <div id="overlay">
+        <h1 id="title" style="font-size: 45px; color: #ffd700; text-shadow: 0 0 20px #ffd700;">UNLIMITED RACER</h1>
+        <p id="msg">Vuốt để di chuyển! Ăn THỎI VÀNG để BẤT TỬ và BẮN LAZE!</p>
+        <button class="btn" onclick="startGame()">KHAI CHIẾN</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const distEl = document.getElementById("dist");
+        const energyBar = document.getElementById("energyBar");
+        const energyFill = document.getElementById("energyFill");
+        const overlay = document.getElementById("overlay");
+        const titleEl = document.getElementById("title");
+        const msgEl = document.getElementById("msg");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let gameActive = false, distance = 0, speed = 10, laneWidth = canvas.width / 3;
+        let playerX = canvas.width / 2, playerY = canvas.height - 150, playerW = 60, playerH = 100;
+        let enemies = [], gold = [], particles = [], bullets = [];
+        let nitroTimer = 0, bulletTimer = 0, touchStartX = 0, shakeTime = 0;
+
+        // Tối ưu điều khiển Vuốt (Swipe)
+        window.addEventListener("touchstart", (e) => touchStartX = e.touches[0].clientX);
+        window.addEventListener("touchmove", (e) => {
+            if (!gameActive) return;
+            let touchX = e.touches[0].clientX;
+            let dx = touchX - touchStartX;
+            playerX += dx * 1.5; // Hệ số mượt
+            if (playerX < playerW/2) playerX = playerW/2;
+            if (playerX > canvas.width - playerW/2) playerX = canvas.width - playerW/2;
+            touchStartX = touchX;
+        });
+
+        function startGame() {
+            gameActive = true; overlay.style.display = "none";
+            distance = 0; speed = 10; enemies = []; gold = []; particles = []; bullets = []; nitroTimer = 0;
+            playerX = canvas.width / 2;
+        }
+
+        function spawnEnemy() {
+            if (Math.random() < 0.05 + (level * 0.005)) {
+                enemies.push({ x: Math.random() * (canvas.width - 60) + 30, y: -120, w: 55, h: 90 });
+            }
+        }
+
+        function spawnGold() {
+            if (Math.random() < 0.01) { gold.push({ x: Math.random() * (canvas.width - 40) + 20, y: -80 }); }
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push({ x, y, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8, a: 1, color });
+            }
+        }
+
+        // --- HÀM VẼ NHÂN VẬT PIXEL CHUYÊN NGHIỆP ---
+        function drawPixelCar(x, y, color, label) {
+            ctx.fillStyle = color; ctx.fillRect(x - 25, y - 45, 50, 90);
+            ctx.fillStyle = "#000"; ctx.fillRect(x - 15, y - 35, 30, 20); // Kính xe
+            ctx.fillStyle = "#ff4400"; ctx.fillRect(x - 20, y + 30, 10, 5); // Đèn hậu
+            ctx.fillRect(x + 10, y + 30, 10, 5);
+            if (label) { ctx.fillStyle = "#fff"; ctx.font = "bold 14px Arial"; ctx.fillText(label, x - 18, y + 10); }
+        }
+
+        function drawGold(x, y) {
+            ctx.fillStyle = "#ffd700"; ctx.fillRect(x - 15, y - 10, 30, 20);
+            ctx.fillStyle = "#fff"; ctx.font = "bold 12px Arial"; ctx.fillText("9999", x - 13, y + 5);
+        }
+        // ----------------------------------------
+
+        function update() {
+            if (!gameActive) return;
+            distance += Math.floor(speed / 2); distEl.innerText = distance;
+            speed += 0.003; let level = Math.floor(distance / 500);
+
+            if (shakeTime > 0) shakeTime--;
+
+            // Xử lý kẻ địch & VA CHẠM
+            enemies.forEach((e, i) => {
+                e.y += speed * 0.8;
+                if (e.y > canvas.height + 100) enemies.splice(i, 1);
+                
+                // Thuật toán va chạm chính xác
+                if (Math.abs(playerX - e.x) < 55 && Math.abs(playerY - e.y) < 95) {
+                    if (nitroTimer > 0) { 
+                        enemies.splice(i, 1); createExplosion(e.x, e.y, "#ff4400"); // Húc bay
+                    } else { endGame(); }
+                }
+            });
+
+            // Xử lý ăn Vàng
+            gold.forEach((g, i) => {
+                g.y += speed * 0.8;
+                if (Math.abs(playerX - g.x) < 45 && Math.abs(playerY - g.y) < 55) {
+                    nitroTimer = 300; // 5 giây
+                    gold.splice(i, 1); 
+                    if (window.navigator.vibrate) window.navigator.vibrate(100);
+                }
+            });
+
+            // Logic Nitro (Laze + Bất tử)
+            if (nitroTimer > 0) {
+                nitroTimer--;
+                energyBar.style.display = "block";
+                energyFill.style.width = (nitroTimer / 300 * 100) + "%";
+                
+                // Tự động bắn laze (CỰC VIP)
+                bulletTimer++;
+                if (bulletTimer > 10) {
+                    bullets.push({ x: playerX - 15, y: playerY - 50 });
+                    bullets.push({ x: playerX + 15, y: playerY - 50 });
+                    bulletTimer = 0;
+                }
+            } else { energyBar.style.display = "none"; }
+
+            // Xử lý đạn laze
+            bullets.forEach((b, i) => {
+                b.y -= 15;
+                if (b.y < 0) bullets.splice(i, 1);
+                enemies.forEach((e, ei) => {
+                    if (Math.abs(b.x - e.x) < 25 && b.y < e.y + 45) {
+                        enemies.splice(ei, 1); bullets.splice(i, 1);
+                        createExplosion(e.x, e.y, "#ff4400");
+                        if (window.navigator.vibrate) window.navigator.vibrate(20);
+                    }
+                });
+            });
+
+            // Xử lý hạt nổ
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.a -= 0.03;
+                if (p.a <= 0) particles.splice(i, 1);
+            });
+
+            spawnEnemy(); spawnGold();
+        }
+
+        function draw() {
+            let shakeX = (Math.random()-0.5) * shakeTime;
+            ctx.save(); ctx.translate(shakeX, 0); // Hiệu ứng rung
+
+            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Vẽ làn đường (Hiệu ứng lướt gió)
+            ctx.strokeStyle = "#333"; ctx.lineWidth = 2; ctx.setLineDash([40, 20]);
+            ctx.lineDashOffset = -distance * 2;
+            for (let i = 1; i < 3; i++) {
+                ctx.beginPath(); ctx.moveTo(i * laneWidth, 0); ctx.lineTo(i * laneWidth, canvas.height); ctx.stroke();
+            }
+            ctx.setLineDash([]); ctx.lineWidth = 1;
+
+            // Vẽ Đạn
+            bullets.forEach(b => { ctx.fillStyle = "#00ff00"; ctx.fillRect(b.x, b.y, 4, 30); });
+
+            // Vẽ xe đối thủ (Chuyên nghiệp)
+            enemies.forEach(e => {
+                ctx.shadowBlur = 10; ctx.shadowColor = "#ff4400";
+                drawPixelCar(e.x, e.y, "#ff0000"); ctx.shadowBlur = 0;
+            });
+
+            // Vẽ Vàng
+            gold.forEach(g => {
+                ctx.shadowBlur = 15; ctx.shadowColor = "#ffd700";
+                drawGold(g.x, g.y); ctx.shadowBlur = 0;
+            });
+
+            // Vẽ Người chơi (Pixel)
+            let pColor = nitroMode > 0 ? "#00ff00" : "#00d2ff";
+            ctx.shadowBlur = 20; ctx.shadowColor = pColor;
+            if (nitroTimer > 0) ctx.style.animation = "flash 0.2s infinite"; // Nhấp nháy khi bất tử
+            drawPixelCar(playerX, playerY, pColor, "G.LUÂN");
+            ctx.style.animation = ""; // Reset
+
+            // Vẽ hạt nổ
+            particles.forEach(p => { ctx.globalAlpha = p.a; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); });
+            ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.restore();
+
+            update(); requestAnimationFrame(draw);
+        }
+
+        function endGame() {
+            gameActive = false; 
+            if (window.navigator.vibrate) window.navigator.vibrate(500); // Rung mạnh khi thua
+            overlay.style.display = "flex";
+            titleEl.innerText = "NỔ TUNG!";
+            msgEl.innerText = "Bạn đã đua được: " + distance + "m";
+            shakeTime = 15; // Rung màn hình
+        }
+
+        draw();
+    </script>
+</body>
+</html>
 
