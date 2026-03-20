@@ -3,67 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ĐẠI CHIẾN HẠM - PROFILE VIP</title>
+    <title>ĐẠI CHIẾN HẠM - HỆ THỐNG ĐĂNG NHẬP</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Consolas', sans-serif; color: white; }
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Segoe UI', sans-serif; color: white; }
         canvas { display: block; }
-        /* UI Chính */
-        #ui { position: absolute; top: 15px; width: 100%; display: flex; justify-content: space-around; font-size: 20px; font-weight: bold; z-index: 10; text-shadow: 2px 2px #000; pointer-events: none; }
+        
+        /* UI Tổng quát */
+        #ui { position: absolute; top: 15px; width: 100%; display: flex; justify-content: space-around; font-size: 18px; font-weight: bold; z-index: 10; pointer-events: none; text-shadow: 2px 2px #000; }
         #moneyUI { color: #ffd700; } #scoreUI { color: #00ffcc; }
-        
-        /* Các Màn Hình */
-        #overlay, #shop, #profilePage { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; text-align: center; display: none; }
-        #overlay { display: flex; background: rgba(0,5,10,0.95); }
-        #shop { background: rgba(0,10,20,0.98); }
-        #profilePage { background: rgba(10,0,20,0.98); border: 2px solid #9933ff; }
 
-        /* Nút và Item Shop */
-        .btn { background: linear-gradient(45deg, #ff4757, #ff6b81); color: white; padding: 15px 40px; border-radius: 50px; border: none; font-size: 20px; margin: 10px; box-shadow: 0 0 20px rgba(255, 71, 87, 0.5); cursor: pointer; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); box-shadow: 0 0 10px rgba(255, 71, 87, 0.3); }
-        .shop-item { background: rgba(255,255,255,0.05); padding: 15px; margin: 10px; border-radius: 15px; width: 300px; border: 1px solid #00d2ff; }
-        .buy-btn { background: #00d2ff; color: black; border: none; padding: 5px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
-
-        /* CSS Trang Profile */
-        .profile-card { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 1px solid #9933ff; width: 320px; box-shadow: 0 0 30px rgba(153, 51, 255, 0.3); }
-        #profileNameDisplay { font-size: 24px; color: #9933ff; font-weight: bold; }
-        #totalMoneyDisplay { font-size: 30px; color: #ffd700; font-weight: bold; margin: 15px 0; }
-        #rankDisplay { color: #00ffcc; font-style: italic; }
+        /* Các lớp phủ (Overlays) */
+        .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 30; text-align: center; }
         
+        /* Form Đăng Nhập (Sign In) */
+        #signinScreen { background: linear-gradient(135deg, #050510, #101030); }
+        .input-box { padding: 15px; width: 250px; border-radius: 10px; border: 2px solid #ff4757; background: #000; color: white; font-size: 18px; margin-bottom: 20px; outline: none; text-align: center; }
+        
+        /* Nút bấm Víp */
+        .btn { background: linear-gradient(45deg, #ff4757, #ff6b81); color: white; padding: 15px 45px; border-radius: 50px; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 0 20px rgba(255, 71, 87, 0.4); margin: 10px; }
+        .btn-purple { background: linear-gradient(45deg, #9933ff, #bf80ff); box-shadow: 0 0 20px rgba(153, 51, 255, 0.4); }
+
+        /* Trang Profile */
+        #profilePage { display: none; background: rgba(5, 5, 15, 0.98); }
+        .profile-card { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 20px; border: 1px solid #00d2ff; width: 300px; }
     </style>
 </head>
 <body>
+
     <div id="ui">
         <div>TIỀN: <span id="moneyUI">0</span>$</div>
         <div>ĐIỂM: <span id="scoreUI">0</span></div>
     </div>
 
-    <div id="overlay">
-        <h1 style="font-size: 50px; color: #ff4757; text-shadow: 0 0 25px #ff4757; margin-bottom: 5px;">ĐẠI CHIẾN HẠM</h1>
-        <p style="font-size: 14px; color: #aaa;">Gia Luân Production</p>
+    <div id="signinScreen" class="overlay-screen">
+        <h1 style="color: #ff4757; font-size: 40px; text-shadow: 0 0 20px #ff4757;">ĐĂNG NHẬP HẠM</h1>
+        <p>Nhập tên Thuyền trưởng để bắt đầu:</p>
+        <input type="text" id="userNameInput" class="input-box" placeholder="Tên của bạn..." maxlength="12">
+        <button class="btn" onclick="processSignIn()">XÁC NHẬN</button>
+    </div>
+
+    <div id="mainMenu" class="overlay-screen" style="display: none;">
+        <h1 style="font-size: 45px; color: #ff4757;">ĐẠI CHIẾN HẠM</h1>
+        <p id="welcomeMsg" style="color: #00ffcc; font-weight: bold;"></p>
         <button class="btn" onclick="startGame()">KHAI CHIẾN</button>
-        <button class="btn" style="background: #00d2ff;" onclick="toggleShop(true)">VŨ KHÍ SHOP</button>
-        <button class="btn" style="background: #9933ff;" onclick="toggleProfile(true)">HỒ SƠ HẠM</button>
+        <button class="btn btn-purple" onclick="toggleProfile(true)">HỒ SƠ TÀI KHOẢN</button>
     </div>
 
-    <div id="shop">
-        <h2>HỆ THỐNG VŨ KHÍ</h2>
-        <div id="shopList">
-            <div class="shop-item"><b>LAZE ĐÔI (v2)</b><br><small>Bắn 2 tia mạnh mẽ</small><br><span>Giá: 500$</span> <button class="buy-btn" onclick="buyWeapon(1, 500)">MUA</button></div>
-            <div class="shop-item"><b>SÚNG BA TIA (v3)</b><br><small>Tỏa rộng quét sạch màn hình</small><br><span>Giá: 1200$</span> <button class="buy-btn" onclick="buyWeapon(2, 1200)">MUA</button></div>
-            <div class="shop-item"><b>PHÁO PLASMA (v4)</b><br><small>Siêu sát thương</small><br><span>Giá: 2500$</span> <button class="buy-btn" onclick="buyWeapon(3, 2500)">MUA</button></div>
-        </div>
-        <button class="btn" onclick="toggleShop(false)">QUAY LẠI</button>
-    </div>
-
-    <div id="profilePage">
-        <h2>HỒ SƠ CHIẾN HẠM VIP</h2>
+    <div id="profilePage" class="overlay-screen">
+        <h2>THÔNG TIN THUYỀN TRƯỞNG</h2>
         <div class="profile-card">
-            <p>HẠM: <span id="profileNameDisplay">CHIẾN HẠM GIA LUÂN</span> <button class="buy-btn" onclick="changeProfileName()">ĐỔI</button></p>
-            <p>TỔNG TIỀN KIẾM ĐƯỢC:</p>
-            <div id="totalMoneyDisplay">0$</div>
-            <p>BẬC HẠM: <span id="rankDisplay">LÍNH MỚI</span></p>
+            <p>TÊN: <span id="pName" style="color: #ff4757; font-weight: bold;">---</span></p>
+            <p>TỔNG TIỀN NHẶT ĐƯỢC:</p>
+            <h1 id="pTotalMoney" style="color: #ffd700;">0$</h1>
+            <p>CẤP BẬC: <span id="pRank" style="color: #00ffcc; font-style: italic;">---</span></p>
         </div>
-        <button class="btn" style="background: #9933ff;" onclick="toggleProfile(false)">QUAY LẠI</button>
+        <button class="btn" onclick="toggleProfile(false)">QUAY LẠI</button>
+        <button class="btn btn-purple" style="font-size: 14px; padding: 10px 20px;" onclick="resetAccount()">ĐỔI TÀI KHOẢN</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -73,137 +68,143 @@
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-        // --- CÁC BIẾN CỐT LÕI (Sửa lỗi: Thêm reset, enemyRate) ---
-        let gameActive = false, score = 0, currentMoney = 100, weaponType = 0;
-        let player = { x: canvas.width/2, y: canvas.height-120, w: 60, h: 80 };
+        // --- HỆ THỐNG DỮ LIỆU ---
+        let userData = { name: "", totalMoney: 0 };
+        let gameActive = false, score = 0, currentMoney = 0;
+        let player = { x: canvas.width/2, y: canvas.height-120 };
         let enemies = [], bullets = [], items = [], boss = null;
-        let spawnTimeout, fireTimeout; // Biến quản lý vòng lặp
-        let baseEnemyRate = 800; // Tốc độ tạo địch ban đầu
-        let scoreUI = document.getElementById("scoreUI"), moneyUI = document.getElementById("moneyUI");
+        let spawnTime, fireTime;
 
-        // --- LOGIC PROFILE (Lưu trữ và Thống kê) ---
-        let profileData = { name: "CHIẾN HẠM GIA LUÂN", totalMoney: 0 };
-        function loadProfile() {
-            let savedData = localStorage.getItem("daichienham_profile_v2");
-            if (savedData) profileData = JSON.parse(savedData);
-            document.getElementById("profileNameDisplay").innerText = profileData.name;
-            updateProfileUI();
-        }
-        function saveProfile() { localStorage.setItem("daichienham_profile_v2", JSON.stringify(profileData)); }
-        function updateProfileUI() {
-            document.getElementById("totalMoneyDisplay").innerText = profileData.totalMoney + "$";
-            // Logic Cấp Bậc (Rank)
-            let rank = "LÍNH MỚI";
-            if (profileData.totalMoney >= 1000) rank = "THUYỀN TRƯỞNG";
-            if (profileData.totalMoney >= 5000) rank = "ĐÔ ĐỐC";
-            if (profileData.totalMoney >= 15000) rank = "HUYỀN THOẠI VŨ TRỤ";
-            document.getElementById("rankDisplay").innerText = rank;
-        }
-        function changeProfileName() {
-            let newName = prompt("Nhập tên Chiến hạm mới:", profileData.name);
-            if (newName && newName.length <= 15) { profileData.name = newName.toUpperCase(); saveProfile(); document.getElementById("profileNameDisplay").innerText = profileData.name; }
-            else { alert("Tên không hợp lệ hoặc quá dài!"); }
-        }
-
-        // --- ÂM THANH SFX (Web Audio API) ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSfx(f, t, d) {
-            let o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = t; o.frequency.value = f; g.gain.value = 0.05;
-            o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + d);
-        }
-
-        // --- ĐIỀU KHIỂN VUỐT & GIAO DIỆN ---
-        function toggleShop(show) { document.getElementById("shop").style.display = show ? "flex" : "none"; moneyUI.innerText = currentMoney; }
-        function toggleProfile(show) { document.getElementById("profilePage").style.display = show ? "flex" : "none"; updateProfileUI(); }
-        function buyWeapon(type, price) {
-            if (currentMoney >= price) { currentMoney -= price; weaponType = type; alert("Đã nâng cấp vũ khí v" + (type+1) + "!"); toggleShop(false); moneyUI.innerText = currentMoney; }
-            else { alert("Không đủ tiền, hãy chiến đấu!"); }
-        }
-        window.addEventListener("touchmove", (e) => { if(!gameActive) return; player.x = e.touches[0].clientX; });
-
-        // --- SỬA LỖI: LOGIC SPAWN VÀ BẮN ---
-        function spawnEnemy() {
-            if (!gameActive) return;
-            // Spawn Boss dữ dằn hơn
-            if (score > 0 && score % 1500 === 0 && !boss) {
-                boss = { x: canvas.width/2, y: -150, hp: 80, maxHp: 80, dir: randomSign(), speed: 5 };
-            } else if (!boss) {
-                enemies.push({ x: Math.random()*(canvas.width-60)+30, y: -50, hp: 1, type: Math.random()>0.8?'tank':'car' });
+        function initData() {
+            let saved = localStorage.getItem("daichienham_v4");
+            if (saved) {
+                userData = JSON.parse(saved);
+                showMainMenu();
+            } else {
+                document.getElementById("signinScreen").style.display = "flex";
             }
-            if (Math.random() > 0.6) items.push({ x: Math.random()*(canvas.width-50)+25, y: -50 });
-            // Tốc độ tạo địch nhanh dần theo điểm
-            let currentEnemyRate = Math.max(200, baseEnemyRate - score/10); 
-            spawnTimeout = setTimeout(spawnEnemy, currentEnemyRate);
         }
 
-        function autoFire() {
-            if (!gameActive) return;
-            // Súng tự động bắn theo loại
-            if (weaponType === 0) bullets.push({ x: player.x, y: player.y-40, vx: 0, size: 4 });
-            if (weaponType === 1) { bullets.push({ x: player.x-15, y: player.y-40, vx: 0, size: 4 }); bullets.push({ x: player.x+15, y: player.y-40, vx: 0, size: 4 }); }
-            if (weaponType === 2) { bullets.push({ x: player.x, y: player.y-40, vx: 0, size: 4 }); bullets.push({ x: player.x, y: player.y-40, vx: -2.5, size: 4 }); bullets.push({ x: player.x, y: player.y-40, vx: 2.5, size: 4 }); }
-            if (weaponType === 3) bullets.push({ x: player.x, y: player.y-40, vx: 0, size: 18 });
-            playSfx(440, 'square', 0.04);
-            fireTimeout = setTimeout(autoFire, 250); // Tốc độ bắn
+        function processSignIn() {
+            let name = document.getElementById("userNameInput").value.trim();
+            if (name.length >= 2) {
+                userData.name = name.toUpperCase();
+                localStorage.setItem("daichienham_v4", JSON.stringify(userData));
+                showMainMenu();
+            } else { alert("Vui lòng nhập tên từ 2 ký tự trở lên!"); }
         }
 
+        function showMainMenu() {
+            document.getElementById("signinScreen").style.display = "none";
+            document.getElementById("mainMenu").style.display = "flex";
+            document.getElementById("welcomeMsg").innerText = "CHÀO MỪNG THUYỀN TRƯỞNG: " + userData.name;
+        }
+
+        function toggleProfile(show) {
+            document.getElementById("profilePage").style.display = show ? "flex" : "none";
+            if (show) {
+                document.getElementById("pName").innerText = userData.name;
+                document.getElementById("pTotalMoney").innerText = userData.totalMoney + "$";
+                let rank = "LÍNH MỚI";
+                if(userData.totalMoney > 2000) rank = "ĐÔ ĐỐC";
+                if(userData.totalMoney > 10000) rank = "HUYỀN THOẠI";
+                document.getElementById("pRank").innerText = rank;
+            }
+        }
+
+        function resetAccount() {
+            if(confirm("Bạn muốn xóa tài khoản và đổi tên mới?")) {
+                localStorage.removeItem("daichienham_v4");
+                location.reload();
+            }
+        }
+
+        // --- LOGIC GAME (Sửa lỗi Súng và Địch) ---
         function startGame() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
             gameActive = true;
-            document.getElementById("overlay").style.display = "none";
-            // Sửa lỗi: Reset mọi thứ
-            score = 0; enemies = []; bullets = []; boss = null; items = []; player.x = canvas.width/2;
-            clearTimeout(spawnTimeout); clearTimeout(fireTimeout); // Reset vòng lặp cũ
-            spawnEnemy(); autoFire(); // CHẠY NGAY
+            document.getElementById("mainMenu").style.display = "none";
+            score = 0; currentMoney = 0; enemies = []; bullets = []; boss = null;
+            spawnLogic(); fireLogic();
         }
+
+        function spawnLogic() {
+            if (!gameActive) return;
+            // Tạo Boss mỗi 1500 điểm
+            if (score > 0 && score % 1500 === 0 && !boss) {
+                boss = { x: canvas.width/2, y: -100, hp: 60, maxHp: 60, dir: 1 };
+            } else if (!boss) {
+                enemies.push({ x: Math.random()*(canvas.width-60)+30, y: -50, type: Math.random()>0.8?'tank':'car' });
+            }
+            if (Math.random() > 0.7) items.push({ x: Math.random()*(canvas.width-60)+30, y: -50 });
+            setTimeout(spawnLogic, Math.max(300, 900 - score/15));
+        }
+
+        function fireLogic() {
+            if (!gameActive) return;
+            bullets.push({ x: player.x, y: player.y-40 });
+            setTimeout(fireLogic, 250);
+        }
+
+        window.addEventListener("touchmove", (e) => { if(gameActive) player.x = e.touches[0].clientX; });
 
         function update() {
             if (!gameActive) return;
-            bullets.forEach((b, i) => { b.y -= 14; b.x += b.vx || 0; if(b.y < 0) bullets.splice(i, 1); });
-            enemies.forEach((e, i) => { e.y += 6 + score/5000; // Địch nhanh dần
-                if(e.y > canvas.height) enemies.splice(i, 1);
-                bullets.forEach((b, bi) => { if(Math.abs(b.x-e.x)<30 && Math.abs(b.y-e.y)<40) { enemies.splice(i, 1); bullets.splice(bi, 1); score += 50; currentMoney += 5; } });
-                if(Math.abs(player.x-e.x)<45 && Math.abs(player.y-e.y)<65) endGame();
+            bullets.forEach((b, i) => { b.y -= 12; if(b.y < 0) bullets.splice(i,1); });
+            enemies.forEach((e, i) => {
+                e.y += 6;
+                bullets.forEach((b, bi) => {
+                    if (Math.abs(b.x-e.x)<30 && Math.abs(b.y-e.y)<40) {
+                        enemies.splice(i,1); bullets.splice(bi,1);
+                        score += 50; currentMoney += 10;
+                    }
+                });
+                if (Math.abs(player.x-e.x)<40 && Math.abs(player.y-e.y)<60) endGame();
             });
-            if (boss) { boss.y += boss.y < 120 ? 3 : 0; boss.x += boss.speed * boss.dir; if (boss.x > canvas.width-60 || boss.x < 60) boss.dir *= -1;
-                bullets.forEach((b, bi) => { if (Math.abs(b.x-boss.x)<65 && Math.abs(b.y-boss.y)<70) { boss.hp--; bullets.splice(bi, 1); if(boss.hp <= 0) { boss = null; score += 2000; currentMoney += 1000; } } });
+            if (boss) {
+                boss.y += boss.y < 100 ? 2 : 0; boss.x += 4 * boss.dir;
+                if (boss.x > canvas.width-50 || boss.x < 50) boss.dir *= -1;
+                bullets.forEach((b, bi) => {
+                    if (Math.abs(b.x-boss.x)<70 && Math.abs(b.y-boss.y)<70) {
+                        boss.hp--; bullets.splice(bi, 1);
+                        if(boss.hp <= 0) { boss = null; score += 2000; currentMoney += 500; }
+                    }
+                });
             }
-            items.forEach((it, i) => { it.y += 6; if(Math.abs(player.x-it.x)<40 && Math.abs(player.y-it.y)<60) { currentMoney += 50; items.splice(i, 1); playSfx(880, 'sine', 0.1); } });
-            scoreUI.innerText = score; moneyUI.innerText = currentMoney;
+            items.forEach((it, i) => { it.y += 6; if(Math.abs(player.x-it.x)<40 && Math.abs(player.y-it.y)<60) { currentMoney += 50; items.splice(i,1); } });
+            
+            document.getElementById("scoreUI").innerText = score;
+            document.getElementById("moneyUI").innerText = currentMoney;
         }
 
         function draw() {
-            ctx.fillStyle = "#010810"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#0d2030"; for(let i=0; i<10; i++) ctx.fillRect(canvas.width/2-2, (i*140 + Date.now()/8)%canvas.height, 4, 70);
-            ctx.fillStyle = "#00ffcc"; bullets.forEach(b => ctx.fillRect(b.x-b.size/2, b.y, b.size, 25));
-            enemies.forEach(e => { ctx.fillStyle = e.type==='tank'?'#57606f':'#ff4757'; ctx.fillRect(e.x-30, e.y-45, 60, 90); });
-            if (boss) { ctx.fillStyle = "#ff0000"; ctx.fillRect(boss.x-70, boss.y-60, 140, 120);
-                ctx.fillStyle = "white"; ctx.fillRect(boss.x-60, boss.y-80, 120, 6); ctx.fillStyle = "#00ff00"; ctx.fillRect(boss.x-60, boss.y-80, (boss.hp/boss.maxHp)*120, 6);
-                ctx.font = "bold 16px Arial"; ctx.fillText("BOSS VŨ TRỤ", boss.x-50, boss.y-90);
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,canvas.width, canvas.height);
+            // Vạch đường
+            ctx.fillStyle = "#111";
+            for(let i=0; i<10; i++) ctx.fillRect(canvas.width/2-2, (i*140 + Date.now()/10)%canvas.height, 4, 80);
+            // Đạn & Địch
+            ctx.fillStyle = "#00ffcc"; bullets.forEach(b => ctx.fillRect(b.x-2, b.y, 4, 20));
+            enemies.forEach(e => { ctx.fillStyle = e.type==='tank'?'#555':'#f44'; ctx.fillRect(e.x-25, e.y-40, 50, 80); });
+            if(boss) { 
+                ctx.fillStyle = "red"; ctx.fillRect(boss.x-60, boss.y-50, 120, 100); 
+                ctx.fillStyle = "#0f0"; ctx.fillRect(boss.x-50, boss.y-70, (boss.hp/boss.maxHp)*100, 5);
             }
-            ctx.font = "30px Arial"; items.forEach(it => ctx.fillText("💰", it.x-15, it.y));
-            // Vẽ người chơi (Gia Luân PRODUCTION)
-            ctx.shadowBlur = 20; ctx.shadowColor = "#00d2ff"; ctx.fillStyle = "#00d2ff";
-            ctx.beginPath(); ctx.moveTo(player.x, player.y-55); ctx.lineTo(player.x-35, player.y+35); ctx.lineTo(player.x+35, player.y+35); ctx.closePath(); ctx.fill();
-            ctx.fillStyle="#000"; ctx.font="bold 10px Arial"; ctx.fillText("PRO", player.x-10, player.y+20); ctx.shadowBlur = 0;
+            ctx.font = "25px Arial"; items.forEach(it => ctx.fillText("💰", it.x-15, it.y));
+            // Chiến hạm (Người chơi)
+            ctx.shadowBlur = 15; ctx.shadowColor = "#00d2ff"; ctx.fillStyle = "#00d2ff";
+            ctx.beginPath(); ctx.moveTo(player.x, player.y-50); ctx.lineTo(player.x-30, player.y+30); ctx.lineTo(player.x+30, player.y+30); ctx.closePath(); ctx.fill();
+            ctx.shadowBlur = 0;
             update(); requestAnimationFrame(draw);
         }
 
         function endGame() {
-            gameActive = false; 
-            if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 200]);
-            // Cập nhật tổng tiền khi thua
-            profileData.totalMoney += currentMoney; saveProfile(); updateProfileUI();
-            document.getElementById("overlay").style.display = "flex";
-            document.querySelector("h1").innerText = "THẤT BẠI - THỬ LẠI?";
-            titleEl.innerText = "THUA CUỘC!";
-            msgEl.innerText = "Điểm: " + distance + "m";
+            gameActive = false;
+            userData.totalMoney += currentMoney;
+            localStorage.setItem("daichienham_v4", JSON.stringify(userData));
+            document.getElementById("mainMenu").style.display = "flex";
+            document.querySelector("h1").innerText = "KẾT THÚC CHIẾN DỊCH";
         }
 
-        function randomSign() { return Math.random() < 0.5 ? -1 : 1; }
-
-        loadProfile(); // Chạy khi load trang
-        draw(); // Bắt đầu loop vẽ nền
+        initData(); draw();
     </script>
 </body>
 </html>
